@@ -1,22 +1,14 @@
 ---
 name: multi-agent-code-review
 description: Use when 需要进行代码审查、PR review、代码质量评估或多智能体协作审查
+version: 1.0.0
+author: Muru AI
+license: MIT
+platforms: [linux, macos, windows]
 metadata:
   hermes:
     tags: [code-review, pr-review, quality-assessment, multi-agent]
-    activation:
-      include:
-        - "code review"
-        - "review code"
-        - "审查代码"
-        - "PR review"
-        - "pull request review"
-        - "代码审查"
-        - "质量评估"
-      exclude:
-        - "write code"
-        - "debug"
-        - "implement"
+    related_skills: [multi-agent-code-test, multi-agent-code-evaluation, multi-agent-skill-factory]
 ---
 
 # multi-agent-code-review

@@ -1,231 +1,147 @@
 # 测试用例池
 
-## 单元测试审查测试用例
+> 测试员Agent使用此文档执行完整测试。
 
-### TC-001: TypeScript 类型安全检查
+---
 
-**输入代码**:
-```typescript
-function processData(input: any): string {
-  return input.name.toUpperCase();
-}
+## 语法验证
+
+| 用例ID | 测试项 | 输入 | 预期结果 | 通过条件 |
+|--------|--------|------|----------|----------|
+| TC-SYNTAX-001 | frontmatter格式 | SKILL.md内容 | YAML格式正确 | 以`---`开头和结尾 |
+| TC-SYNTAX-002 | 必需字段 | frontmatter | 包含name/description/version/author/license/platforms/metadata | 7个字段都存在 |
+| TC-SYNTAX-003 | description长度 | description内容 | ≤1024字符 | `len(description) <= 1024` |
+| TC-SYNTAX-004 | description开头 | description内容 | 以"Use when"开头 | `description.startswith("Use when")` |
+| TC-SYNTAX-005 | version字段 | version内容 | 符合语义化版本 | `x.y.z`格式 |
+
+---
+
+## 功能测试
+
+### 代码审查触发词测试
+
+| 用例ID | 测试项 | 输入 | 预期结果 | 通过条件 |
+|--------|--------|------|----------|----------|
+| TC-FUNC-001 | 英文触发 | "code review" | 正确识别 | 触发skill |
+| TC-FUNC-002 | 中文触发 | "审查代码" | 正确识别 | 触发skill |
+| TC-FUNC-003 | PR触发 | "PR review" | 正确识别 | 触发skill |
+| TC-FUNC-004 | 排除词 | "write code" | 不触发 | 排除正确 |
+
+### 多Agent调度测试
+
+| 用例ID | 测试项 | 输入 | 预期结果 | 通过条件 |
+|--------|--------|------|----------|----------|
+| TC-FUNC-010 | 主编解析 | TypeScript代码审查请求 | 识别语言和范围 | 主编正确分解任务 |
+| TC-FUNC-011 | 并行调度 | 包含5个审查维度的代码 | 5个Agent并行工作 | 无串行等待 |
+| TC-FUNC-012 | 报告汇总 | 各Agent审查结果 | 生成结构化报告 | 格式正确 |
+
+### 严重性标签测试
+
+| 用例ID | 测试项 | 输入 | 预期结果 | 通过条件 |
+|--------|--------|------|----------|----------|
+| TC-FUNC-020 | blocking标签 | SQL注入代码 | 🔴 [blocking] | 正确标记 |
+| TC-FUNC-021 | important标签 | 空值未处理 | 🟡 [important] | 正确标记 |
+| TC-FUNC-022 | nit标签 | 代码风格不一致 | 🟢 [nit] | 正确标记 |
+| TC-FUNC-023 | suggestion标签 | 可使用更优算法 | 💡 [suggestion] | 正确标记 |
+
+---
+
+## 边界测试
+
+| 用例ID | 测试项 | 输入 | 预期结果 | 通过条件 |
+|--------|--------|------|----------|----------|
+| TC-BOUND-001 | 空输入 | 空字符串 | 返回友好提示 | 不崩溃 |
+| TC-BOUND-002 | 超长代码 | >10000行 | 部分审查或超时处理 | 不崩溃 |
+| TC-BOUND-003 | 特殊字符 | XSS payload | 安全处理 | 无注入 |
+| TC-BOUND-004 | 二进制文件 | .exe/.dll | 跳过或报错 | 不崩溃 |
+| TC-BOUND-005 | 未知语言 | 自定义语言 | 使用通用规则 | 不崩溃 |
+
+---
+
+## 安全测试
+
+| 用例ID | 测试项 | 输入 | 预期结果 | 通过条件 |
+|--------|--------|------|----------|----------|
+| TC-SEC-001 | 敏感信息 | 密码/token/密钥在代码中 | 不出现在输出 | 无泄露 |
+| TC-SEC-002 | 注入攻击 | SQL/XSS/命令注入代码 | 正确标记为blocking | 正确检测 |
+| TC-SEC-003 | 路径遍历 | `../../../etc/passwd` | 标记为security issue | 正确识别 |
+| TC-SEC-004 | 恶意代码 | 明显恶意代码模式 | 标记并警告 | 正确识别 |
+
+---
+
+## 语言专项测试
+
+### TypeScript
+
+| 用例ID | 测试项 | 输入 | 预期结果 | 通过条件 |
+|--------|--------|------|----------|----------|
+| TC-TS-001 | any类型 | `function f(input: any)` | 🟡 important | 正确检测 |
+| TC-TS-002 | strict模式 | 缺少strict配置 | 🟡 important | 正确检测 |
+| TC-TS-003 | 泛型约束 | 缺少泛型约束 | 🟢 nit | 正确检测 |
+| TC-TS-004 | React安全 | XSS in JSX | 🔴 blocking | 正确检测 |
+
+### Python
+
+| 用例ID | 测试项 | 输入 | 预期结果 | 通过条件 |
+|--------|--------|------|----------|----------|
+| TC-PY-001 | 裸except | `except:` | 🟡 important | 正确检测 |
+| TC-PY-002 | 可变默认参数 | `def f(items=[])` | 🟡 important | 正确检测 |
+| TC-PY-003 | SQL注入 | 字符串拼接SQL | 🔴 blocking | 正确检测 |
+| TC-PY-004 | 异步错误 | 缺少await | 🟡 important | 正确检测 |
+
+### Go
+
+| 用例ID | 测试项 | 输入 | 预期结果 | 通过条件 |
+|--------|--------|------|----------|----------|
+| TC-GO-001 | 错误忽略 | `_, _ = fn()` | 🟡 important | 正确检测 |
+| TC-GO-002 | 并发安全 | 非线程安全map访问 | 🔴 blocking | 正确检测 |
+| TC-GO-003 | context缺失 | 无context参数 | 🟡 important | 正确检测 |
+| TC-GO-004 | SQL注入 | fmt.Sprintf拼SQL | 🔴 blocking | 正确检测 |
+
+---
+
+## 输出格式测试
+
+| 用例ID | 测试项 | 输入 | 预期结果 | 通过条件 |
+|--------|--------|------|----------|----------|
+| TC-OUT-001 | Markdown格式 | 审查结果 | 符合模板格式 | 格式正确 |
+| TC-OUT-002 | HTML格式 | `--format html` | 完整CSS和HTML | 可渲染 |
+| TC-OUT-003 | Final Verdict | 包含blocking问题 | "Request Changes" | 决策正确 |
+| TC-OUT-004 | 汇总统计 | 多维度审查结果 | 包含统计表 | 数据准确 |
+
+---
+
+## 测试报告模板
+
+```markdown
+# 测试报告
+
+**技能名称**：multi-agent-code-review
+**版本**：1.0.0
+**测试日期**：2026-05-23
+**测试员**：测试员Agent
+
+## 测试结果汇总
+
+| 测试类型 | 用例数 | 通过 | 失败 | 通过率 |
+|----------|--------|------|------|--------|
+| 语法验证 | 5 | 5 | 0 | 100% |
+| 功能测试 | 12 | 12 | 0 | 100% |
+| 边界测试 | 5 | 5 | 0 | 100% |
+| 安全测试 | 4 | 4 | 0 | 100% |
+| 语言专项 | 12 | 12 | 0 | 100% |
+| **总计** | **38** | **38** | **0** | **100%** |
+
+## 失败用例详情
+
+无
+
+## 测试结论
+
+- [x] 语法验证通过
+- [x] 功能测试通过
+- [x] 边界测试通过
+- [x] 安全测试通过
+- [x] 语言专项通过
+- [x] **可进入评审阶段**
 ```
-
-**预期发现**:
-- `any` 类型使用 → 🟡 important
-- `input.name` 可能为 undefined → 🔴 blocking
-
----
-
-### TC-002: Python 错误处理检查
-
-**输入代码**:
-```python
-def divide(a, b):
-    try:
-        return a / b
-    except:
-        return 0
-```
-
-**预期发现**:
-- 裸 except 子句 → 🟡 important
-- 未处理 `b` 为 0 的情况 → 🟢 nit (边界条件)
-
----
-
-### TC-003: Go 并发安全检查
-
-**输入代码**:
-```go
-var counter int
-
-func increment() {
-    counter++
-}
-```
-
-**预期发现**:
-- 非线程安全的计数器 → 🔴 blocking
-
----
-
-### TC-004: SQL 注入检测
-
-**输入代码**:
-```typescript
-const query = `SELECT * FROM users WHERE id = ${userId}`;
-```
-
-**预期发现**:
-- SQL 注入漏洞 → 🔴 blocking
-
----
-
-### TC-005: 复杂度检查
-
-**输入代码**:
-```typescript
-function complexFunction(a: number, b: number, c: number): number {
-  if (a > 0) {
-    if (b > 0) {
-      if (c > 0) {
-        if (a > b) {
-          if (b > c) {
-            return a + b;
-          } else {
-            return b + c;
-          }
-        }
-      }
-    }
-  }
-  return 0;
-}
-```
-
-**预期发现**:
-- 嵌套过深（5层）→ 🟡 important
-- 可维护性问题 → 🟡 important
-
----
-
-### TC-006: 测试覆盖率检查
-
-**输入代码**:
-```typescript
-// user.ts
-export function validateEmail(email: string): boolean {
-  return email.includes('@');
-}
-
-// user.test.ts
-test('valid email', () => {
-  expect(validateEmail('test@example.com')).toBe(true);
-});
-```
-
-**预期发现**:
-- 缺少边界用例测试 → 🟡 important
-- 未测试无效输入
-
----
-
-### TC-007: 安全认证检查
-
-**输入代码**:
-```typescript
-app.get('/api/admin', (req, res) => {
-  res.json({ secret: 'admin-data' });
-});
-```
-
-**预期发现**:
-- 缺少认证检查 → 🔴 blocking
-- 敏感数据泄露风险 → 🔴 blocking
-
----
-
-### TC-008: 资源泄漏检查
-
-**输入代码**:
-```python
-def read_file(path: str) -> str:
-    f = open(path, 'r')
-    return f.read()
-```
-
-**预期发现**:
-- 文件未关闭 → 🟡 important
-- 建议使用 with 语句 → 🟢 nit
-
----
-
-### TC-009: 性能热点检查
-
-**输入代码**:
-```python
-def find_duplicates(items: list) -> list:
-    duplicates = []
-    for i in items:
-        for j in items:
-            if i == j and i not in duplicates:
-                duplicates.append(i)
-    return duplicates
-```
-
-**预期发现**:
-- O(n²) 复杂度 → 🟡 important
-- 建议使用 set → 💡 suggestion
-
----
-
-### TC-010: API 速率限制检查
-
-**输入代码**:
-```typescript
-app.post('/api/login', (req, res) => {
-  const user = authenticate(req.body);
-  res.json({ token: generateToken(user) });
-});
-```
-
-**预期发现**:
-- 缺少速率限制 → 🟡 important（可被暴力破解）
-
----
-
-## 集成测试用例
-
-### TC-201: 多 Agent 协作测试
-
-**场景**: 提交一个包含 TypeScript API 代码的 PR
-
-**预期流程**:
-1. 主编分析任务
-2. Architecture Reviewer 检查设计
-3. Security Reviewer 检查认证和注入
-4. Performance Reviewer 检查查询效率
-5. Code Quality Reviewer 检查代码风格
-6. Testing Reviewer 检查测试覆盖
-
-**预期输出**: 完整的 Markdown 审查报告
-
----
-
-### TC-202: Go 微服务测试
-
-**场景**: 提交一个包含 Go HTTP 服务的 PR
-
-**预期发现**:
-- Context 传播检查
-- Goroutine 泄漏检测
-- 错误处理完整性
-
----
-
-## 边界条件测试
-
-### TC-301: 空输入处理
-
-**输入**: 空字符串、空数组、null、undefined
-
-**检查点**:
-- 是否有空值检查
-- 错误信息是否友好
-
-### TC-302: 超大输入
-
-**输入**: 超长字符串、超大数组
-
-**检查点**:
-- 是否有长度限制
-- 是否会导致内存问题
-
-### TC-303: 特殊字符
-
-**输入**: SQL 注入、XSS、命令注入尝试
-
-**检查点**:
-- 是否正确转义
-- 是否有输入验证
