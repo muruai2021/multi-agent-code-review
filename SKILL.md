@@ -83,7 +83,9 @@ metadata:
 
 ## 输出格式
 
-生成 Markdown 格式的审查报告，结构如下：
+支持 Markdown 和 HTML 两种输出格式。
+
+### Markdown 格式（默认）
 
 ```markdown
 # Code Review Report
@@ -118,6 +120,27 @@ metadata:
 
 [最终决策：Approve / Comment / Request Changes]
 ```
+
+### HTML 格式
+
+当用户请求 HTML 格式报告时，生成自包含的 HTML 页面，包含：
+- 完整的 CSS 样式（可嵌入邮件）
+- 彩色严重性标签
+- 代码高亮块
+- 响应式布局
+
+使用场景：
+- 邮件发送审查报告
+- 嵌入内部报告系统
+- 打印友好格式
+
+```html
+<!-- 请求示例 -->
+review src/**/*.ts --format html > report.html
+review PR #123 --html > report.html
+```
+
+详细模板见 `references/output-template.md`
 
 ## 语言指南
 
